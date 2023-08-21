@@ -18,32 +18,48 @@ async def answer_user_prompt(relevant_info):
         return response
 
 # Extract file paths from response
-def extract_file_paths(response):
-    """Extract file paths from the response using regular expressions."""
-    pattern = r"(filebot-store-000\S*)`"
-    file_paths = re.findall(pattern, response)
-    return file_paths
+#def extract_file_paths(response, code_mode):
+#    """Extract file paths from the response using regular expressions."""
+#    pattern = r"(filebot-store-000\S*)`"
+#    file_paths = re.findall(pattern, response)
+#
+#    # If in code-mode, strip `_docs.md` from the end of file paths
+#    if code_mode:
+#        file_paths = [fp.replace('_docs.md', '') for fp in file_paths]
+#
+#    return file_paths
 
 # Extract file paths from response
-def extract_file_paths(response):
-    """Extract file paths from the response using regulpattern = r"(filebot-store-000[^\n]*?)(?=[`'\"]?\n|$)"ar expressions."""
+def extract_file_paths(response, code_mode=False):
+    """Extract file paths from the response using regular expressions."""
     pattern = r"\[(.*?)\]"
     file_paths = re.findall(pattern, response)
+
+    # In code-mode, strip '_doc.md' from file paths that have it
+    if code_mode:
+        file_paths = [path.replace('_doc.md', '') if path.endswith('_doc.md') else path for path in file_paths]
+
     return file_paths
 
 async def main_async():
     parser = argparse.ArgumentParser(description='Run filebot with the specified model.')
     parser.add_argument('--model', type=str, default="gpt-3.5-turbo", help='Which model to use: gpt-3.5-turbo or gpt-3.5-turbo (default is gpt-3.5-turbo)')
     parser.add_argument('--num-files', type=int, default=3, help='Number of top files to consider (default is 3)')
+    parser.add_argument('--code-mode', action='store_true', help='Your code flag description')
 
     args = parser.parse_args()
     model_name = args.model
+    code_mode = args.code_mode
 
     config = configparser.ConfigParser()
     config.read('filebot.config')
     file_summaries_path = config['OPTIONS'].get('RelativeFileSummariesPath', '')
     file_store_path = config['OPTIONS'].get('RelativeFileStorePath', '')
-    await create_file_summaries(file_store_path, file_summaries_path)
+
+    print("code mode:", code_mode)
+
+    # Pass the flag value to create_file_summaries
+    await create_file_summaries(file_store_path, file_summaries_path, code_mode=code_mode)
 
     while True:
         user_prompt = input("\033[92mPrompt:\033[0m ")
@@ -52,7 +68,7 @@ async def main_async():
         response = await answer_user_prompt(relevant_info)
 
         # Extract file paths
-        file_paths = extract_file_paths(response)
+        file_paths = extract_file_paths(response, code_mode)
 
         if file_paths:
 
