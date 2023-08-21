@@ -41,6 +41,13 @@ def extract_file_paths(response, code_mode=False):
 
     return file_paths
 
+def get_source_code_path(file_path, code_mode=False):
+    # In code-mode, strip '_doc.md' from the file path if it has it
+    if code_mode and file_path.endswith('_doc.md'):
+        file_path = file_path.replace('_doc.md', '')
+
+    return file_path
+
 async def main_async():
     parser = argparse.ArgumentParser(description='Run filebot with the specified model.')
     parser.add_argument('--model', type=str, default="gpt-3.5-turbo", help='Which model to use: gpt-3.5-turbo or gpt-3.5-turbo (default is gpt-3.5-turbo)')
@@ -69,11 +76,15 @@ async def main_async():
 
         # Extract file paths
         file_paths = extract_file_paths(response, code_mode)
+        # In code-mode, strip '_doc.md' from file paths that have it
+        if code_mode:
+            file_paths = [path.replace('_docs.md', '') if path.endswith('_docs.md') else path for path in file_paths]
 
         if file_paths:
 
             # Rank and get top files as per user's choice
             top_files = await rank_files(file_paths, args.num_files)
+            print("top files", top_files)
 
             # Asynchronously get answers for the top 3 files
             answers = await get_file_answers(top_files, user_prompt, answer_prompt)
