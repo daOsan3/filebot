@@ -84,13 +84,18 @@ async def main_async():
 
             # Rank and get top files as per user's choice
             top_files = await rank_files(file_paths, args.num_files)
-            print("top files", top_files)
+
+            # In code_mode, only consider the first item in the top_files list
+            top_answers_prepend = "\nTop answers from relevant files:"
+            if code_mode:
+                top_files = [top_files[0]] if top_files else []
+                top_answers_prepend = "\nTop answer (source code mode) from relevant files:"
 
             # Asynchronously get answers for the top 3 files
             answers = await get_file_answers(top_files, user_prompt, answer_prompt)
 
             # Display the results
-            print("\nTop answers from relevant files:")
+            print(top_answers_prepend)
             for index, (file, answer) in enumerate(answers, start=1):
                 print(f"{index}. {answer}\nsource: {file}\n\n")
             print("")
