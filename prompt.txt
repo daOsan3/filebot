@@ -1,0 +1,7 @@
+FileBot is a Python-based project designed to be a stand-alone utility or a service to other bots or tools to help answer user prompts based on the content of specified files. It works by summarizing the contents of files, identifying relevant files based on a user prompt, and then returning a response with the paths of the relevant files.
+
+Generate concise but informative documentation for $filepath in markdown. Replace andy single or triple backticks with ^ or ^^^, respectively within the mardown contents. Present the markdown documentation in a single code block. The title should be `#Documentation for $filepath`.
+
+```
+$Document
+```

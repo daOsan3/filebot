@@ -1,12 +1,18 @@
+import sys
+import os
 import json
 import asyncio
 import re
 import configparser
 import argparse
+
+# Ensure the project root directory is in sys.path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from modules.file_summary import create_file_summaries
-from modules.find_info import find_relevant_info
-from modules.find_info import answer_prompt
+from modules.find_info import find_relevant_info, answer_prompt
 from modules.file_ranker import rank_files, get_file_answers
+from modules.docubot.modules import generate_prompts
 
 # Answer user prompt
 async def answer_user_prompt(relevant_info):
