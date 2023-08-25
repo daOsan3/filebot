@@ -81,21 +81,18 @@ async def main_async():
             file_paths = [path.replace('_docs.md', '') if path.endswith('_docs.md') else path for path in file_paths]
 
         if file_paths:
-
             # Rank and get top files as per user's choice
             top_files = await rank_files(file_paths, args.num_files)
 
-            # In code_mode, only consider the first item in the top_files list
-            top_answers_prepend = "\nTop answers from relevant files:"
-            if code_mode:
-                top_files = [top_files[0]] if top_files else []
-                top_answers_prepend = "\nTop answer (source code mode) from relevant files:"
+            # In code_mode, only consider the first two items in the top_files list, if they exist
+            if code_mode and len(top_files) > 1:
+                top_files = top_files[:2]
 
-            # Asynchronously get answers for the top 3 files
+            # Asynchronously get answers for the top 3 files, but one top two if in code mode.
             answers = await get_file_answers(top_files, user_prompt, answer_prompt)
 
             # Display the results
-            print(top_answers_prepend)
+            print("\nTop answers from relevant files:")
             for index, (file, answer) in enumerate(answers, start=1):
                 print(f"{index}. {answer}\nsource: {file}\n\n")
             print("")
