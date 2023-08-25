@@ -3,6 +3,7 @@ import asyncio
 import re
 import configparser
 import argparse
+import functools
 from aiohttp import web
 from modules.file_summary import create_file_summaries
 from modules.find_info import find_relevant_info
@@ -37,22 +38,30 @@ def get_source_code_path(file_path, code_mode=False):
 
     return file_path
 
-async def get_filebot_response(request):
-    data = await request.json()
-    user_prompt = data.get('user_prompt')
-    relevant_info = await find_relevant_info(user_prompt)
-    response = await answer_user_prompt(relevant_info)
-    file_paths = extract_file_paths(response, code_mode)
-    if code_mode:
-        file_paths = [path.replace('_docs.md', '') if path.endswith('_docs.md') else path for path in file_paths]
-    if file_paths:
-        top_files = await rank_files(file_paths, args.num_files)
-        if code_mode and len(top_files) > 1:
-            top_files = top_files[:2]
-        answers = await get_file_answers(top_files, user_prompt, answer_prompt)
-        return web.Response(text=json.dumps(answers))
-    else:
-        return web.Response(text=json.dumps({"error": "No files found"}))
+async def get_filebot_response(request, code_mode, num_files):
+    try:
+        data = await request.json()
+        user_prompt = data.get('user_prompt')
+        relevant_info = await find_relevant_info(user_prompt)
+        print('relevant info', relevant_info)
+        response = await answer_user_prompt(relevant_info)
+        file_paths = extract_file_paths(response, code_mode)
+
+        if code_mode:
+            file_paths = [path.replace('_docs.md', '') if path.endswith('_docs.md') else path for path in file_paths]
+
+        if file_paths:
+            top_files = await rank_files(file_paths, num_files)
+            if code_mode and len(top_files) > 1:
+                top_files = top_files[:2]
+            answers = await get_file_answers(top_files, user_prompt, answer_prompt)
+            return web.Response(text=json.dumps(answers))
+        else:
+            return web.Response(text=json.dumps({"error": "No files found"}))
+    except Exception as e:
+        print(f"Error in get_filebot_response: {e}")
+        return web.Response(status=500, text=f"Internal Server Error: {e}")
+
 async def main_async():
     parser = argparse.ArgumentParser(description='Run filebot with the specified model.')
     parser.add_argument('--model', type=str, default="gpt-4", help='Which model to use: gpt-4 or gpt-4 (default is gpt-4)')
@@ -62,6 +71,7 @@ async def main_async():
     args = parser.parse_args()
     model_name = args.model
     code_mode = args.code_mode
+    num_files = args.num_files
 
     config = configparser.ConfigParser()
     config.read('filebot.config')
@@ -70,13 +80,12 @@ async def main_async():
 
     print("code mode:", code_mode)
 
-    # Pass the flag value to create_file_summaries
     await create_file_summaries(file_store_path, file_summaries_path, code_mode=code_mode)
 
     app = web.Application()
-    app.router.add_post('/get-filebot-response', get_filebot_response)
+    app.router.add_post('/get-filebot-response', functools.partial(get_filebot_response, code_mode=code_mode, num_files=num_files))
 
-    return app # Return the app
+    return app
 
 if __name__ == '__main__':
     app = asyncio.run(main_async())
