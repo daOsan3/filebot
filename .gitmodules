@@ -1,0 +1,3 @@
+[submodule "modules/docubot"]
+	path = modules/docubot
+	url = https://github.com/assoc1ates/prompt-works
