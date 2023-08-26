@@ -53,9 +53,16 @@ async def get_filebot_response(request, code_mode, num_files):
         if file_paths:
             top_files = await rank_files(file_paths, num_files)
             if code_mode and len(top_files) > 1:
-                top_files = top_files[:2]
+                top_files = top_files[:3]
             final_prompt = await answer_prompt(top_files[0], user_prompt, max_token_length=8200)
-            return web.Response(text=json.dumps(final_prompt))
+
+            # Fixed the return_object here
+            return_object = {
+                "prompt": final_prompt,
+                "files": top_files
+            }
+
+            return web.Response(text=json.dumps(return_object))
         else:
             return web.Response(text=json.dumps({"error": "No files found"}))
     except Exception as e:
