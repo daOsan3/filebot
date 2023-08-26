@@ -41,21 +41,32 @@ Future updates will aim to address these limitations and add new functionality t
    Start by cloning this repository to your local machine:
 
 ```
-git clone https://github.com/dOsan3/filebot
+git clone --recurse-submodules https://github.com/daOsan3/filebot
 cd filebot
 ```
 
-2. **Put files in the file store**
+2. **Add openai api key**
 
-Put a directory of desired files in `file-store-000/`. For example:
+Create an `./openai_api_key` file in the project root and also in `docubot/`
+
+```
+YOUR_OPENAI_API_KEY
+```
+
+3. **Put project file into the file store**
+
+```
+cp -r /path/to/mystuff filebot-store-000/mystuff
+```
+
+So your `file-store-000/` could have multiple projects you move into it.
 ```
 ├── filebot-store-000/
 │   ├── my-stuff/
 │   ├── my-code-project/
 ```
 
-
-2. **Create filebot.config**
+4. **Create filebot.config**
 
 Filebot will only work against the specified folder in `filebot-store-000/`. You can change the folder you want filebot to work against in the `filebot.config`. It is highly recommended to have related files in a single folder. Your `filebot.config` should look something like this.
 
@@ -76,34 +87,69 @@ RelativeFileSummariesPath = file_summaries.my-stuff.json
 RelativeFileStorePath = filebot-store-000/my-stuff
 ```
 
-2. **Build the Docker Image**
+5. **Create chatgpt-ui docker network**
+
+```
+docker network create chatgpt-ui_network
+```
+
+6. **Launch filebot**
 
 ```
 docker build -t filebot .
+docker run -it --network=chatgpt-ui_network -p 8080:8080 -v /home/david/projects/filebot/:/app/ -u $(id -u):$(id -g) filebot python filebot.py --code
 ```
 
-3. **Run the Docker Container**
-
-After the image is built, you can run your application with the following command:
-
-```
-docker run -it -v /path/to/filebot/:/app/ -u $(id -u):$(id -g) filebot
-```
-
-~~Optionally, you may run gpt4. Please be aware that it many times more expensive in price per token than gpt-3.5-turbo.~~ I somehow lost the functionality in some branch somewhere and I mistakenly thought I merged into master - will fix or hunt it down soon. You can just do a find and replace for gpt-3.5-turbo with gpt4 in your code editor on the source code and then run it like that if you're desperate.
-
-```
-docker run -it -v /path/to/filebot/:/app/ -u $(id -u):$(id -g) filebot python filebot.py --model gpt4
-```
-Note that `python filebot.py` is now explicit in the command to override `CMD` in Dockerfile to allow for passing in the optional argument.
+If you're not chatting with source code files omit the `--code` option.
 
 The `-u $(id -u):$(id -g)` option allows the container to inherit your host file write permissions so that any file summaries it creates or updates is available to the host.
 
 Be sure to replace `/path/to/your/files` with the path to the directory that contains the files you want to search. This will make the directory accessible inside the Docker container.
 
+
+7. **Launch chatpt-ui**
+
+```
+docker -f chatgpt-ui/docker-compose.yml --build up
+docker -f chatgpt-ui-server/docker-compose.yml --build up
+```
+
+8. **Launch docubot (skip if you don't have source code in the files you want to chat with)**
+
+In filebot project root directory:
+
+```
+docker-build -it docubot docubot/
+```
+Place the source-code directory you want to chat with into docubot
+
+```
+cp -r /path/to/source-code docubot/
+```
+
+Enter docubot.
+
+```
+docker exec -it docubot bash
+```
+
+Then in the container:
+
+```
+python docubot.py /path/to/my-stuff filebot-store-000/my-stuff
+```
+
 ## Usage
 
-Once you've started the Docker container, the application will ask you to enter a search term. After you've entered a term, the application will print a response with the paths of the files that contain the term. If no files contain the term, the application will inform you that no relevant files were found.
+Once all the containers are running:
+
+1. launch `http://localhost:9000/admin` and navigate to `ApiTokens` and input you openai token.
+
+2. launch `http://locoalhost:80` and enjoy filebot enabled chatgpt.
+
+And just use it like chatgpt's web app, but if you want to chat with your files add `/filebotActivate` in you message somewhere. It will specifically answer your prompt against the files defined in your filebot.config. If you don't put `/filebotActivate` it will behave just like a normal chatgpt without filebot. However, it can remember the context of past filebot messages and completions in your conversation (toggle off `frugal` in the UI). You can mix messages, so you can have some with `/filebotActivate` and others without.
+
+## More
 
 You can have multiple file stores. Simply provide the paths where you want the file_summaries to be and the location of the individual file store. All files stores must be in the `filebot-store-000` directory. Its highly recommened that you seperate file stores as the file summaries must fit into the context of the llm model, which has a token limit.
 
@@ -124,12 +170,6 @@ CaseSensitive = False
 MaxResults =
 RelativeFileSummariesPath = file_summaries.my-stuff.json
 RelativeFileStorePath = filebot-store-000/my-stuff
-```
-
-Also add an `./openai_api_key` file.
-
-```
-YOUR_OPENAI_API_KEY
 ```
 
 ## How it works
@@ -176,10 +216,13 @@ Here's a brief explanation of the role of each file/directory:
 - [x] Modify summaries on detection of new file on prompt search.
 - [x] File summaries generated via OpenAI GPT-3 API.
 - [x] User can ask for relevant files based on entire file summaries.
-- [x] Optional OpenAI GPT-4 API.
+- [x] Optional OpenAI GPT-4 API (default)
 - [ ] Add keywords field to file_summaries.json
 - [ ] Implement file anonymization strategies when sending data to OpenAI or similar platforms.
-- [x] Answer prompt based on up to 3 top ranked documents.
+- [x] ~~Answer prompt based on up to 3 top ranked documents.~~ Current direction doesn't necessitate
 - [ ] Drop in any small LLM or OpenAI API compatible service.
 - [ ] Support pdf files.
 - [ ] Support a variety of other common file types.
+- [x] Add user interface (thanks, chatgpt-ui!)
+- [ ] Ensure that it throws a chatgpt-ui compliant error if filebot messages exceed token limit.
+- [ ] A single docker-compose up command for the entire project.
