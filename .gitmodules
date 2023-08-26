@@ -1,3 +1,6 @@
 [submodule "modules/docubot"]
 	path = modules/docubot
 	url = https://github.com/assoc1ates/prompt-works
+[submodule "chatgpt-ui"]
+	path = chatgpt-ui
+	url = https://github.com/daOsan3/chatgpt-ui
