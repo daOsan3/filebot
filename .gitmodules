@@ -4,3 +4,6 @@
 [submodule "chatgpt-ui"]
 	path = chatgpt-ui
 	url = https://github.com/daOsan3/chatgpt-ui
+[submodule "chatgpt-ui-server"]
+	path = chatgpt-ui-server
+	url = https://github.com/daOsan3/chatgpt-ui-server
