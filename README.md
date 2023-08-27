@@ -97,7 +97,7 @@ docker network create chatgpt-ui_network
 
 ```
 docker build -t filebot .
-docker run -it --network=chatgpt-ui_network -p 8080:8080 -v /home/david/projects/filebot/:/app/ -u $(id -u):$(id -g) filebot python filebot.py --code
+docker run -it --name filebot --network=chatgpt-ui_network -p 8080:8080 -v /home/david/projects/filebot/:/app/ -u $(id -u):$(id -g) filebot python filebot.py --code
 ```
 
 If you're not chatting with source code files omit the `--code` option.
@@ -109,9 +109,13 @@ Be sure to replace `/path/to/your/files` with the path to the directory that con
 
 7. **Launch chatpt-ui**
 
+server
 ```
-docker -f chatgpt-ui/docker-compose.yml --build up
-docker -f chatgpt-ui-server/docker-compose.yml --build up
+docker-compose -f chatgpt-ui-server/docker-compose.yml --build up
+```
+ui
+```
+docker-compose -f chatgpt-ui/docker-compose.yml --build up
 ```
 
 8. **Launch docubot (skip if you don't have source code in the files you want to chat with)**
@@ -137,6 +141,22 @@ Then in the container:
 
 ```
 python docubot.py /path/to/my-stuff filebot-store-000/my-stuff
+```
+
+**Other**
+
+If you get http errors when using chatgpt-ui with filebot (`filebotActivate`), you may need to simply ensure filebot is connected to the docker `chatgpt-ui_network`.
+
+Check if filebot is on the network:
+
+```
+docker network inspect chatgpt-ui_network
+```
+
+If not:
+
+```
+docker network connect chatgpt-ui_network filebot
 ```
 
 ## Usage
