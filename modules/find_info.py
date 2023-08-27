@@ -56,6 +56,6 @@ async def answer_prompt(file_path, user_prompt, max_token_length=3900, answer_ty
 
     final_prompt = f"{prepend_prompt}. {user_prompt}, based on the following: ```{content}```"
 
-    response = await generate_completion(final_prompt, max_tokens=8500, temperature=0.8)
+    response = await generate_completion(final_prompt, max_tokens=8192, temperature=0.8)
 
     return response
