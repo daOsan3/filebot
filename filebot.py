@@ -10,6 +10,11 @@ from modules.find_info import find_relevant_info
 from modules.find_info import answer_prompt
 from modules.file_ranker import rank_files, get_file_answers
 
+async def get_store_value(request):
+    """Extract `store` value from the incoming request data."""
+    data = await request.json()
+    return data.get('store', '')  # Default to empty string if no store value is provided
+
 # Answer user prompt
 async def answer_user_prompt(relevant_info):
     """Generate a response to the user's prompt based on the relevant info."""
@@ -41,8 +46,11 @@ def get_source_code_path(file_path, code_mode=False):
 async def get_filebot_response(request, code_mode, num_files):
     try:
         data = await request.json()
+        print(data)
         user_prompt = data.get('user_prompt')
-        relevant_info = await find_relevant_info(user_prompt)
+        store_value = data.get('store')
+        print(store_value)
+        relevant_info = await find_relevant_info(user_prompt=user_prompt, user_store=store_value)
         print('relevant info', relevant_info)
         response = await answer_user_prompt(relevant_info)
         file_paths = extract_file_paths(response, code_mode)
@@ -87,8 +95,7 @@ async def main_async():
 
     print("code mode:", code_mode)
 
-    await create_file_summaries(file_store_path, file_summaries_path, code_mode=code_mode)
-
+    #await create_file_summaries(file_store_path + store_value, file_summaries_path + store_value, code_mode=code_mode)
     app = web.Application()
     app.router.add_post('/get-filebot-response', functools.partial(get_filebot_response, code_mode=code_mode, num_files=num_files))
 

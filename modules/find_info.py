@@ -5,17 +5,16 @@ from .token_checker import check_token_length
 from .token_counter import num_tokens_from_string
 from .llm_model import generate_completion
 
-async def find_relevant_info(user_prompt, max_token_length=8192):
+async def find_relevant_info(user_prompt, user_store, max_token_length=8192):
     # Read config file.
     config = configparser.ConfigParser()
     config.read('filebot.config')
 
     # Get path of file summaries path.
-    file_summaries_path = config['OPTIONS'].get('RelativeFileSummariesPath', '')
-
+    #file_summaries_path = config['OPTIONS'].get('RelativeFileSummariesPath', '')
+    file_summaries_path = "file_summaries." + user_store + ".json"
     with open(file_summaries_path, 'r') as json_file:
         file_summaries = json.load(json_file)
-
 
     # Get prepend text
     prepend_prompt = config['DEFAULT'].get('PrependPrompt', '')
