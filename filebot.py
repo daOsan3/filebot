@@ -1,3 +1,4 @@
+import os
 import json
 import asyncio
 import re
@@ -9,6 +10,7 @@ from modules.file_summary import create_file_summaries
 from modules.find_info import find_relevant_info
 from modules.find_info import answer_prompt
 from modules.file_ranker import rank_files, get_file_answers
+from modules.get_store_paths_and_names import get_store_paths_and_names
 
 async def get_store_value(request):
     """Extract `store` value from the incoming request data."""
@@ -90,12 +92,16 @@ async def main_async():
 
     config = configparser.ConfigParser()
     config.read('filebot.config')
-    file_summaries_path = config['OPTIONS'].get('RelativeFileSummariesPath', '')
-    file_store_path = config['OPTIONS'].get('RelativeFileStorePath', '')
 
     print("code mode:", code_mode)
 
-    #await create_file_summaries(file_store_path + store_value, file_summaries_path + store_value, code_mode=code_mode)
+    relative_paths, store_names = get_store_paths_and_names('filebot-store-000')
+
+    # Iterate over each relative_path and store_name
+    for relative_path, store_name in zip(relative_paths, store_names):
+        # Call create_file_summaries with each relative_path and store_name
+        await create_file_summaries(relative_path, "file_summaries." + store_name + ".json", code_mode=code_mode)
+
     app = web.Application()
     app.router.add_post('/get-filebot-response', functools.partial(get_filebot_response, code_mode=code_mode, num_files=num_files))
 
