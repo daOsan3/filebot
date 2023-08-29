@@ -1,5 +1,6 @@
 import os
 import json
+import asyncio
 import time
 import math
 from .token_counter import num_tokens_from_string
@@ -96,40 +97,36 @@ SOURCE_CODE_EXTENSIONS = [
     # Version Control
     '.gitignore'
 ]
+import os
+import json
 
 async def create_file_summaries(directory, file_summaries_path, model_name="gpt-3.5-turbo", code_mode=False):
-    ...
-    ...
-
     """Walk through a directory and generate a summary for each file."""
-    # Load existing summaries
     try:
         with open(file_summaries_path, 'r') as json_file:
             file_summaries = json.load(json_file)
     except FileNotFoundError:
         file_summaries = {}
+    except json.JSONDecodeError:
+        print("Error decoding JSON, initializing new summaries.")
+        file_summaries = {}
 
-    # Set a flag to check if file_summaries.json is updated
     is_updated = False
 
     for root, dirs, files in os.walk(directory):
-        # Skip directories named .gitignore
         if ".git" in dirs:
             dirs.remove(".git")
 
         for file in files:
-            # Skip files named .gitignore
             if file == ".gitignore":
                 continue
 
-            # Skip source code files if code_mode is True
             if code_mode and file.endswith(tuple(SOURCE_CODE_EXTENSIONS)):
                 continue
 
             file_path = os.path.join(root, file)
             base_file_path, _ = os.path.splitext(file_path)
 
-            # Check if the file is new or updated
             if all(not key.startswith(base_file_path) for key in file_summaries.keys()) or \
             any(file_summaries[key]['mtime'] < os.path.getmtime(file_path) for key in file_summaries.keys() if key.startswith(base_file_path)):
                 print(f"New or updated file detected: '{file_path}'")
@@ -140,12 +137,8 @@ async def create_file_summaries(directory, file_summaries_path, model_name="gpt-
                             'summary': summary,
                             'mtime': os.path.getmtime(file_path)
                         }
-                    # Set the flag to True when file_summaries.json is updated
-                    is_updated = True
-
-    with open(file_summaries_path, 'w') as json_file:
-        json.dump(file_summaries, json_file, indent=4)
-
-    # Notify the user if file_summaries.json is updated
-    if is_updated:
-        print(f"{file_summaries_path} has been updated.")
+                    try:
+                        with open(file_summaries_path, 'w') as json_file:
+                            json.dump(file_summaries, json_file, indent=4)
+                    except Exception as e:
+                        print(f"An error occurred while writing to file: {e}")
