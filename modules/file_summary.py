@@ -5,6 +5,7 @@ import time
 import math
 from .token_counter import num_tokens_from_string
 from .llm_model import generate_completion
+from .is_binary_file import is_binary_file
 
 def get_summary_instruction(config_path):
     """Parse the config file and get SUMMARY instruction."""
@@ -129,16 +130,19 @@ async def create_file_summaries(directory, file_summaries_path, model_name="gpt-
 
             if all(not key.startswith(base_file_path) for key in file_summaries.keys()) or \
             any(file_summaries[key]['mtime'] < os.path.getmtime(file_path) for key in file_summaries.keys() if key.startswith(base_file_path)):
-                print(f"New or updated file detected: '{file_path}'")
-                summaries = await summarize_file(file_path, model_name=model_name)
-                if summaries:
-                    for path, summary in summaries:
-                        file_summaries[path] = {
-                            'summary': summary,
-                            'mtime': os.path.getmtime(file_path)
-                        }
-                    try:
-                        with open(file_summaries_path, 'w') as json_file:
-                            json.dump(file_summaries, json_file, indent=4)
-                    except Exception as e:
-                        print(f"An error occurred while writing to file: {e}")
+                if is_binary_file(file_path):
+                    print(f"Binary file detected, skipping: '{file_path}'")
+                else:
+                    print(f"New or updated file detected: '{file_path}'")
+                    summaries = await summarize_file(file_path, model_name=model_name)
+                    if summaries:
+                        for path, summary in summaries:
+                            file_summaries[path] = {
+                                'summary': summary,
+                                'mtime': os.path.getmtime(file_path)
+                            }
+                        try:
+                            with open(file_summaries_path, 'w') as json_file:
+                                json.dump(file_summaries, json_file, indent=4)
+                        except Exception as e:
+                            print(f"An error occurred while writing to file: {e}")
