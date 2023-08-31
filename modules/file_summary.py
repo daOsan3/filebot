@@ -3,9 +3,11 @@ import json
 import asyncio
 import time
 import math
+import logging
 from .token_counter import num_tokens_from_string
 from .llm_model import generate_completion
 from .is_binary_file import is_binary_file
+from .ignore import filter_ignored_files
 
 def get_summary_instruction(config_path):
     """Parse the config file and get SUMMARY instruction."""
@@ -103,23 +105,34 @@ import json
 
 async def create_file_summaries(directory, file_summaries_path, model_name="gpt-3.5-turbo", code_mode=False):
     """Walk through a directory and generate a summary for each file."""
+
     try:
         with open(file_summaries_path, 'r') as json_file:
             file_summaries = json.load(json_file)
     except FileNotFoundError:
         file_summaries = {}
     except json.JSONDecodeError:
-        print("Error decoding JSON, initializing new summaries.")
+        logging.error("Error decoding JSON, initializing new summaries.")
         file_summaries = {}
 
     is_updated = False
+
+    # Determine the path to the ignore file in the directory.
+    ignore_file_path = os.path.join(directory, '.filebotignore')
 
     for root, dirs, files in os.walk(directory):
         if ".git" in dirs:
             dirs.remove(".git")
 
-        for file in files:
-            if file == ".gitignore":
+        # Filter out ignored files if ignore file exists
+        filtered_files = filter_ignored_files(files, ignore_file_path) if os.path.exists(ignore_file_path) else files
+
+        print(f"Files before filtering: {files}")
+        for file in filtered_files:
+            print(f"Files after filtering: {filtered_files}")
+
+            if file == '.filebotignore':
+                logging.info("Skipping .filebotignore as it should not be processed.")
                 continue
 
             if code_mode and file.endswith(tuple(SOURCE_CODE_EXTENSIONS)):
@@ -129,12 +142,14 @@ async def create_file_summaries(directory, file_summaries_path, model_name="gpt-
             base_file_path, _ = os.path.splitext(file_path)
 
             if all(not key.startswith(base_file_path) for key in file_summaries.keys()) or \
-            any(file_summaries[key]['mtime'] < os.path.getmtime(file_path) for key in file_summaries.keys() if key.startswith(base_file_path)):
+               any(file_summaries[key]['mtime'] < os.path.getmtime(file_path) for key in file_summaries.keys() if key.startswith(base_file_path)):
+
                 if is_binary_file(file_path):
-                    print(f"Binary file detected, skipping: '{file_path}'")
+                   logging.info(f"Binary file detected, skipping: '{file_path}'")
                 else:
                     print(f"New or updated file detected: '{file_path}'")
                     summaries = await summarize_file(file_path, model_name=model_name)
+
                     if summaries:
                         for path, summary in summaries:
                             file_summaries[path] = {
@@ -145,4 +160,4 @@ async def create_file_summaries(directory, file_summaries_path, model_name="gpt-
                             with open(file_summaries_path, 'w') as json_file:
                                 json.dump(file_summaries, json_file, indent=4)
                         except Exception as e:
-                            print(f"An error occurred while writing to file: {e}")
+                            logging.exception(f"An error occurred while writing to file: {e}")
