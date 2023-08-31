@@ -4,10 +4,21 @@ import asyncio
 import time
 import math
 import logging
+import hashlib
 from .token_counter import num_tokens_from_string
 from .llm_model import generate_completion
 from .is_binary_file import is_binary_file
 from .ignore import filter_ignored_files
+
+def compute_file_sha256(file_path):
+    """Compute the SHA256 hash of the file content."""
+    sha256_hash = hashlib.sha256()
+
+    with open(file_path, 'rb') as file:
+        while chunk := file.read(4096):
+            sha256_hash.update(chunk)
+
+    return sha256_hash.hexdigest()
 
 def get_summary_instruction(config_path):
     """Parse the config file and get SUMMARY instruction."""
@@ -140,9 +151,10 @@ async def create_file_summaries(directory, file_summaries_path, model_name="gpt-
 
             file_path = os.path.join(root, file)
             base_file_path, _ = os.path.splitext(file_path)
+            file_sha256 = compute_file_sha256(file_path)  # Compute SHA256 hash of the file
 
             if all(not key.startswith(base_file_path) for key in file_summaries.keys()) or \
-               any(file_summaries[key]['mtime'] < os.path.getmtime(file_path) for key in file_summaries.keys() if key.startswith(base_file_path)):
+               any(file_summaries[key]['sha256'] != file_sha256 for key in file_summaries.keys() if key.startswith(base_file_path)):
 
                 if is_binary_file(file_path):
                    logging.info(f"Binary file detected, skipping: '{file_path}'")
@@ -150,14 +162,14 @@ async def create_file_summaries(directory, file_summaries_path, model_name="gpt-
                     print(f"New or updated file detected: '{file_path}'")
                     summaries = await summarize_file(file_path, model_name=model_name)
 
-                    if summaries:
-                        for path, summary in summaries:
-                            file_summaries[path] = {
-                                'summary': summary,
-                                'mtime': os.path.getmtime(file_path)
-                            }
-                        try:
-                            with open(file_summaries_path, 'w') as json_file:
-                                json.dump(file_summaries, json_file, indent=4)
-                        except Exception as e:
-                            logging.exception(f"An error occurred while writing to file: {e}")
+                if summaries:
+                    for path, summary in summaries:
+                        file_summaries[path] = {
+                            'summary': summary,
+                            'sha256': compute_file_sha256(file_path)  # Store SHA256 hash instead of mtime
+                        }
+                    try:
+                        with open(file_summaries_path, 'w') as json_file:
+                            json.dump(file_summaries, json_file, indent=4)
+                    except Exception as e:
+                        logging.exception(f"An error occurred while writing to file: {e}")

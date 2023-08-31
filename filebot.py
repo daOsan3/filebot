@@ -5,6 +5,7 @@ import re
 import configparser
 import argparse
 import functools
+import logging
 from aiohttp import web
 from modules.file_summary import create_file_summaries
 from modules.find_info import find_relevant_info
@@ -53,12 +54,12 @@ def get_source_code_path(file_path, code_mode=False):
 async def get_filebot_response(request, code_mode, num_files):
     try:
         data = await request.json()
-        print(data)
+        logging.info(data)
         user_prompt = data.get('user_prompt')
         store_value = data.get('store')
-        print(store_value)
+        logging.info(store_value)
         relevant_info = await find_relevant_info(user_prompt=user_prompt, user_store=store_value)
-        print('relevant info', relevant_info)
+        logging.info('relevant info', relevant_info)
         response = await answer_user_prompt(relevant_info)
         file_paths = extract_file_paths(response, code_mode)
 
@@ -85,7 +86,7 @@ async def get_filebot_response(request, code_mode, num_files):
         else:
             return web.Response(text=json.dumps({"error": "No files found"}))
     except Exception as e:
-        print(f"Error in get_filebot_response: {e}")
+        logging.error(f"Error in get_filebot_response: {e}")
         return web.Response(status=500, text=f"Internal Server Error: {e}")
 
 async def main_async():
@@ -102,7 +103,7 @@ async def main_async():
     config = configparser.ConfigParser()
     config.read('filebot.config')
 
-    print("code mode:", code_mode)
+    logging.info("code mode:", code_mode)
 
     relative_paths, store_names = get_store_paths_and_names('filebot-store-000')
 
@@ -111,10 +112,12 @@ async def main_async():
     # Iterate over each relative_path and store_name
     for relative_path, store_name in zip(relative_paths, store_names):
         full_store_path = os.path.join(parent_directory, store_name)
-        print("Check documentation...")
+        logging.info("Check documentation...")
         call_docubot(full_store_path, full_store_path)  # Passing the full path to the function
 
-        await create_file_summaries(relative_path, "file_summaries." + store_name + ".json", code_mode=code_mode)
+        file_summaries_path = os.path.join(full_store_path, ".docubot", "file_summaries.json")
+
+        await create_file_summaries(full_store_path, file_summaries_path, code_mode=code_mode)
 
     app = web.Application()
     app.router.add_post('/get-filebot-response', functools.partial(get_filebot_response, code_mode=code_mode, num_files=num_files))

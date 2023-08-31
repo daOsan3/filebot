@@ -1,14 +1,10 @@
 # FileBot
 
-I'd use Khoj if you haven't heard of it. Check it out. It's better all around user experience and has less rough edges, not to mention a proper GUI! It will yield about the same results for you, and Khoj can probably handle more files than FileBot right now.
-
-If you're still interested, checkout FileBot. It's just a personal tool I use that a few other I know are using. It outperforms Khoj on certain queries and can give you a direct source link it based its answer from, but it's probably only a matter of time before Khoj implements that or improves on some dimensions.
-
-## About
-
 FileBot is a Python-based project designed to be a stand-alone utility or a service to other bots or tools to help answer user prompts based on the content of specified files. It works by summarizing the contents of files, identifying relevant files based on a user prompt, and then returning a response with the paths of the relevant files.
 
-If you're using for coding, it's best to use it against documentation files. Working on somethings to make it work off of straight code files, but it's a longshot!
+Currently, in this implementation, it extends the functionality of chatgpt-ui when adding `/filebotActivate="<name-of-your-project>"
+
+~~If you're using for coding, it's best to use it against documentation files. Working on somethings to make it work off of straight code files, but it's a longshot!~~ It now works with source code files.
 
 ***It does NOT retreive files from searches against a vector database. It's LLMs all the way down!***
 
