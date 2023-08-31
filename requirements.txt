@@ -5,3 +5,4 @@ httpx>=0.21.0
 httpcore>=0.14.0
 anyio>=3.4.0
 aiohttp
+pathspec
