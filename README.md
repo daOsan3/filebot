@@ -83,25 +83,21 @@ RelativeFileSummariesPath = file_summaries.my-stuff.json
 RelativeFileStorePath = filebot-store-000/my-stuff
 ```
 
-5. **Create chatgpt-ui docker network**
+5. Launch filebot
+
+Run this command
 
 ```
-docker network create chatgpt-ui_network
+export UID=$(id -u)
+export GID=$(id -g)
 ```
 
-6. **Launch filebot**
+Then
 
 ```
-docker build -t filebot .
-docker run -it --name filebot --network=chatgpt-ui_network -p 8080:8080 -v /home/david/projects/filebot/:/app/ -u $(id -u):$(id -g) filebot python filebot.py --code
+docker-compose up
 ```
-
-If you're not chatting with source code files omit the `--code` option.
-
-The `-u $(id -u):$(id -g)` option allows the container to inherit your host file write permissions so that any file summaries it creates or updates is available to the host.
-
-Be sure to replace `/path/to/your/files` with the path to the directory that contains the files you want to search. This will make the directory accessible inside the Docker container.
-
+The export command will be deprecated, as it's not necessary but you'll get warnings otherwise. It's so the container has permissions on to write in the filebot root project folder.
 
 7. **Launch chatpt-ui**
 

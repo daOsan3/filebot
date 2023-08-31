@@ -51,6 +51,14 @@ def get_source_code_path(file_path, code_mode=False):
 
     return file_path
 
+async def clean_file_path(path):
+    cleaned_path = path.replace('_docs.md', '')
+    cleaned_path = cleaned_path.replace('./docubot/', '')
+    cleaned_path = cleaned_path.replace('/app/filebot-store-000/', '')
+    cleaned_path = cleaned_path.replace('filebot-store-000/', '')
+    return cleaned_path
+
+
 async def get_filebot_response(request, code_mode, num_files):
     try:
         data = await request.json()
@@ -63,12 +71,11 @@ async def get_filebot_response(request, code_mode, num_files):
         response = await answer_user_prompt(relevant_info)
         file_paths = extract_file_paths(response, code_mode)
 
-        if code_mode:
-            file_paths = [
-                path.replace('_docs.md', '').replace('./docubot', '') if path.endswith('_docs.md')
-                else path.replace('./docubot', '')
-                for path in file_paths
-            ]
+        file_paths = [
+            path.replace('_docs.md', '').replace('./docubot', '') if path.endswith('_docs.md')
+            else path.replace('./docubot', '')
+            for path in file_paths
+        ]
 
         if file_paths:
             top_files = await rank_files(file_paths, num_files)
@@ -76,10 +83,16 @@ async def get_filebot_response(request, code_mode, num_files):
                 top_files = top_files[:3]
             final_prompt = await answer_prompt(top_files[0], user_prompt, max_token_length=8200)
 
+            top_files = [await clean_file_path(path) for path in top_files]
+
+            final_top_files = [file for file in top_files if not file.endswith("_doc.md")]
+            final_top_files = list(set(final_top_files))
+
+
             # Fixed the return_object here
             return_object = {
                 "prompt": final_prompt,
-                "files": top_files
+                "files": final_top_files
             }
 
             return web.Response(text=json.dumps(return_object))
