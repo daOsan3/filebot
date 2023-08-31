@@ -23,6 +23,7 @@ async def generate_completion(prompt, model_name="gpt-4", max_tokens=8192, tempe
         }
     )
     json_response = response.json()
+    print(json_response)
     llm_content = json_response['choices'][0]['message']['content']
 
     return llm_content

@@ -33,9 +33,13 @@ def extract_file_paths(response, code_mode=False):
     pattern = r"\[(.*?)\]"
     file_paths = re.findall(pattern, response)
 
-    # In code-mode, strip '_doc.md' from file paths that have it
+    # In code-mode, strip '_doc.md' from file paths that have it and remove './docubot'
     if code_mode:
-        file_paths = [path.replace('_doc.md', '') if path.endswith('_doc.md') else path for path in file_paths]
+        file_paths = [
+            path.replace('_doc.md', '').replace('./docubot', '') if path.endswith('_doc.md') and path.startswith('./docubot')
+            else path
+            for path in file_paths
+        ]
 
     return file_paths
 
@@ -59,7 +63,11 @@ async def get_filebot_response(request, code_mode, num_files):
         file_paths = extract_file_paths(response, code_mode)
 
         if code_mode:
-            file_paths = [path.replace('_docs.md', '') if path.endswith('_docs.md') else path for path in file_paths]
+            file_paths = [
+                path.replace('_docs.md', '').replace('./docubot', '') if path.endswith('_docs.md')
+                else path.replace('./docubot', '')
+                for path in file_paths
+            ]
 
         if file_paths:
             top_files = await rank_files(file_paths, num_files)

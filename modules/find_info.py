@@ -10,6 +10,9 @@ async def find_relevant_info(user_prompt, user_store, max_token_length=8192):
     config = configparser.ConfigParser()
     config.read('filebot.config')
 
+    model_name = "gpt-4"
+    max_tokens = 8192
+
     # Get path of file summaries path.
     #file_summaries_path = config['OPTIONS'].get('RelativeFileSummariesPath', '')
     file_summaries_path = "file_summaries." + user_store + ".json"
@@ -24,9 +27,10 @@ async def find_relevant_info(user_prompt, user_store, max_token_length=8192):
     is_within_limit, user_prompt = check_token_length(user_prompt, max_token_length, 'gpt-3')
 
     if not is_within_limit:
-        return "The content is too large to summarize."
+        model_name = "gpt-3.5-turbo-16k-0613"
+        max_tokens = 16000
 
-    response = await generate_completion(user_prompt)
+    response = await generate_completion(user_prompt, model_name=model_name, max_tokens=max_tokens)
 
     return response
 
