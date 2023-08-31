@@ -11,6 +11,7 @@ from modules.find_info import find_relevant_info
 from modules.find_info import answer_prompt
 from modules.file_ranker import rank_files, get_file_answers
 from modules.get_store_paths_and_names import get_store_paths_and_names
+from modules.call_docubot import call_docubot
 
 async def get_store_value(request):
     """Extract `store` value from the incoming request data."""
@@ -97,9 +98,14 @@ async def main_async():
 
     relative_paths, store_names = get_store_paths_and_names('filebot-store-000')
 
+    parent_directory = "/app/filebot-store-000"
+
     # Iterate over each relative_path and store_name
     for relative_path, store_name in zip(relative_paths, store_names):
-        # Call create_file_summaries with each relative_path and store_name
+        full_store_path = os.path.join(parent_directory, store_name)
+        print("Check documentation...")
+        call_docubot(full_store_path, full_store_path)  # Passing the full path to the function
+
         await create_file_summaries(relative_path, "file_summaries." + store_name + ".json", code_mode=code_mode)
 
     app = web.Application()
