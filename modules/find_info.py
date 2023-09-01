@@ -1,6 +1,7 @@
 import os
 import json
 import configparser
+import logging
 from .token_checker import get_model_and_tokens
 from .token_counter import num_tokens_from_string
 from .llm_model import generate_completion
@@ -32,7 +33,9 @@ async def find_relevant_info(user_prompt, user_store, max_token_length=8192):
     if model_name is None or max_tokens is None:
         raise ValueError(f"No suitable model found for the given token length {total_tokens}.")
 
+    logging.info(f"Sending request to OpenAI {model_name}")
     response = await generate_completion(prompt, model_name=model_name, max_tokens=max_tokens)
+    logging.info(f"Completed request to OpenAI {model_name}")
     return response
 
 def get_file_content(file_path):

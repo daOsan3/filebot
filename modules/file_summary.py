@@ -55,7 +55,9 @@ async def summarize_file(file_path, model_name="gpt-3.5-turbo", max_token_length
     if model_name is None or max_tokens is None:
         raise ValueError(f"No suitable model found for the given token length {total_tokens}.")
 
+    logging.info(f"Sending request to OpenAI {model_name}")
     summary = await generate_completion(prompt, model_name=model_name, max_tokens=max_tokens)
+    logging.info(f"Completed request to OpenAI {model_name}")
     return [(file_path, summary)]
 
 
