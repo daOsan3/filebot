@@ -13,3 +13,23 @@ def check_token_length(content: str, max_length: int, model: str) -> Tuple[bool,
         return False, content
 
     return True, content
+
+def get_model_and_tokens(prompt):
+    is_within_limit_gpt3, prompt = check_token_length(prompt, 4192, 'gpt-3')
+    is_within_limit_gpt4, prompt = check_token_length(prompt, 8000, 'gpt-3')
+    is_within_limit_gpt3_big, prompt = check_token_length(prompt, 160000, 'gpt-3')
+
+    model_name = None
+    max_tokens = None
+
+    if is_within_limit_gpt3:
+        model_name = "gpt-3.5-turbo"
+        max_tokens = 4192
+    elif is_within_limit_gpt4:
+        model_name = "gpt-4"
+        max_tokens = 8000
+    elif is_within_limit_gpt3_big:
+        model_name = "gpt-3.5-turbo-16k-0613"
+        max_tokens = 16000
+
+    return model_name, max_tokens

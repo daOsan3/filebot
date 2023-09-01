@@ -8,6 +8,7 @@ import hashlib
 from .token_counter import num_tokens_from_string
 from .llm_model import generate_completion
 from .is_binary_file import is_binary_file
+from .token_checker import get_model_and_tokens
 from .ignore import filter_ignored_files
 
 def compute_file_sha256(file_path):
@@ -47,23 +48,28 @@ async def summarize_file(file_path, model_name="gpt-3.5-turbo", max_token_length
     total_tokens = num_tokens_from_string(content, 'gpt-3')
     summary_instruction = get_summary_instruction("./filebot.config")
 
-    if total_tokens <= max_token_length:
-        prompt = f"{summary_instruction} Here is the document:\n\n{content}"
+    prompt = f"{summary_instruction} Here is the document:\n\n{content}"
 
-        summary = await generate_completion(prompt, model_name=model_name)
-        return [(file_path, summary)]
+    model_name, max_tokens = get_model_and_tokens(prompt)
 
-    # content exceeds max_token_length
-    summaries = []
-    for i in range(0, total_tokens, max_token_length):
-        print(f"llm summary request {i}")
-        chunk = content[i: i + max_token_length]
-        prompt = f"{summary_instruction} Here is the document:\n\n{chunk}"
+    if model_name is None or max_tokens is None:
+        raise ValueError(f"No suitable model found for the given token length {total_tokens}.")
 
-        summary = await generate_completion(prompt, model_name=model_name)
-        summaries.append((f"{file_path}.{i//max_token_length}", summary))
+    summary = await generate_completion(prompt, model_name=model_name, max_tokens=max_tokens)
+    return [(file_path, summary)]
 
-    return summaries
+
+    ## content exceeds max_token_length
+    #summaries = []
+    #for i in range(0, total_tokens, max_token_length):
+    #    print(f"llm summary request {i}")
+    #    chunk = content[i: i + max_token_length]
+    #    prompt = f"{summary_instruction} Here is the document:\n\n{chunk}"
+
+    #    summary = await generate_completion(prompt, model_name=model_name)
+    #    summaries.append((f"{file_path}.{i//max_token_length}", summary))
+
+    #return summaries
 
 # Modify the create_file_summaries function
 # Define a list of source code extensions

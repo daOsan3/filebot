@@ -130,7 +130,9 @@ async def main_async():
 
         file_summaries_path = os.path.join(full_store_path, ".docubot", "file_summaries.json")
 
+        logging.info("Summarizing for document retreival. This could take awhile.")
         await create_file_summaries(full_store_path, file_summaries_path, code_mode=code_mode)
+        logging.info("Completed summarizing for document retreival.")
 
     app = web.Application()
     app.router.add_post('/get-filebot-response', functools.partial(get_filebot_response, code_mode=code_mode, num_files=num_files))

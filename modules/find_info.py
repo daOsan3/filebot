@@ -1,9 +1,10 @@
 import os
 import json
 import configparser
-from .token_checker import check_token_length
+from .token_checker import get_model_and_tokens
 from .token_counter import num_tokens_from_string
 from .llm_model import generate_completion
+
 
 async def find_relevant_info(user_prompt, user_store, max_token_length=8192):
     # Read config file.
@@ -23,15 +24,15 @@ async def find_relevant_info(user_prompt, user_store, max_token_length=8192):
     prepend_prompt = config['DEFAULT'].get('PrependPrompt', '')
 
 
-    user_prompt = f"{prepend_prompt}. Based on the following summaries```{file_summaries}``` which file or files based on the summaries should we open to see if it has any info regarding. List the most promising files first. Prepend and append a bracket to each filepath given like this `[filebot-store-00/file/path]`: ```{user_prompt}```"
-    is_within_limit, user_prompt = check_token_length(user_prompt, max_token_length, 'gpt-3')
+    prompt = f"{prepend_prompt}. Based on the following summaries```{file_summaries}``` which file or files based on the summaries should we open to see if it has any info regarding. List the most promising files first. Prepend and append a bracket to each filepath given like this `[filebot-store-00/file/path]`: ```{user_prompt}```"
 
-    if not is_within_limit:
-        model_name = "gpt-3.5-turbo-16k-0613"
-        max_tokens = 16000
+    total_tokens = num_tokens_from_string(prompt, 'gpt-3')
+    model_name, max_tokens = get_model_and_tokens(prompt)
 
-    response = await generate_completion(user_prompt, model_name=model_name, max_tokens=max_tokens)
+    if model_name is None or max_tokens is None:
+        raise ValueError(f"No suitable model found for the given token length {total_tokens}.")
 
+    response = await generate_completion(prompt, model_name=model_name, max_tokens=max_tokens)
     return response
 
 def get_file_content(file_path):
