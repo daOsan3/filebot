@@ -140,5 +140,6 @@ async def main_async():
     return app
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     app = asyncio.run(main_async())
     web.run_app(app) # Run the app here
