@@ -1,0 +1,33 @@
+version: '3'
+
+services:
+  filebot:
+    build:
+      context: ./  # The Dockerfile for filebot is in the project root
+      dockerfile: Dockerfile
+    volumes:
+      - ${PWD}:/app/
+    networks:
+      - chatgpt-ui_network  # Existing network
+    ports:
+      - "8080:8080"
+    command: "python filebot.py --code"
+    restart: "always"
+
+  docubot:
+    build:
+      context: ./  # The Dockerfile for docubot is in the project root
+      dockerfile: modules/docubot/Dockerfile  # Specify the Dockerfile name if it's not the default 'Dockerfile'
+    volumes:
+      - ./modules/docubot:/app
+      - ./filebot-store-000:/app/filebot-store-000
+    networks:
+      - chatgpt-ui_network  # Existing network
+    ports:
+      - "8020:8020"  # expose FastAPI's port to the host machine
+    command: ["uvicorn", "docubot:app", "--host", "0.0.0.0", "--port", "8020"]
+    restart: "always"
+
+networks:
+  chatgpt-ui_network:
+    external: true
