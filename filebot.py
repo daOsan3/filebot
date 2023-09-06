@@ -51,13 +51,26 @@ def get_source_code_path(file_path, code_mode=False):
 
     return file_path
 
+async def use_non_doc_file_path(path):
+    cleaned_path = path.replace('_doc.md', '')
+    cleaned_path = cleaned_path.replace('/.docubot', '')
+    return cleaned_path
+
 async def clean_file_path(path):
-    cleaned_path = path.replace('_docs.md', '')
-    cleaned_path = cleaned_path.replace('./docubot/', '')
+    cleaned_path = path.replace('_doc.md', '')
+    cleaned_path = cleaned_path.replace('/.docubot', '')
     cleaned_path = cleaned_path.replace('/app/filebot-store-000/', '')
     cleaned_path = cleaned_path.replace('filebot-store-000/', '')
     return cleaned_path
 
+async def strip_encapsulating_quotes(s):
+    if len(s) == 0:
+        return s
+
+    if s[0] == s[-1] and s[0] in ['"', "'"]:
+        return s[1:-1]
+
+    return s
 
 async def get_filebot_response(request, code_mode, num_files):
     try:
@@ -77,15 +90,20 @@ async def get_filebot_response(request, code_mode, num_files):
             for path in file_paths
         ]
 
+        print(f"file paths:\n\n{file_paths}")
         if file_paths:
-            top_files = await rank_files(file_paths, num_files)
+            #top_files = await rank_files(file_paths, num_files)
+            top_files = file_paths
             if code_mode and len(top_files) > 1:
-                top_files = top_files[:3]
+                top_files = file_paths[:3]
+            top_files = [await use_non_doc_file_path(path) for path in top_files]
+            top_files = [await strip_encapsulating_quotes(path) for path in top_files]
+            print('top_files', top_files)
             final_prompt = await answer_prompt(top_files[0], user_prompt, max_token_length=8200)
 
-            top_files = [await clean_file_path(path) for path in top_files]
 
-            final_top_files = [file for file in top_files if not file.endswith("_doc.md")]
+            final_top_files = [await clean_file_path(path) for path in top_files]
+            print(f"final top files:\n\n{final_top_files}")
             final_top_files = list(set(final_top_files))
 
 
@@ -94,6 +112,8 @@ async def get_filebot_response(request, code_mode, num_files):
                 "prompt": final_prompt,
                 "files": final_top_files
             }
+
+            print(f"return_object:\n\n{return_object}")
 
             return web.Response(text=json.dumps(return_object))
         else:

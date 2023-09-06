@@ -6,6 +6,23 @@ from .token_checker import get_model_and_tokens
 from .token_counter import num_tokens_from_string
 from .llm_model import generate_completion
 
+def break_dict_by_tokens(dict_obj, token_limit, model_name='gpt-3'):
+    # Initialize variables
+    part1 = {}
+    part2 = {}
+    current_token_count = 0
+
+    # Iterate through the dictionary
+    for key, value in dict_obj.items():
+        token_count_key_value = num_tokens_from_string(f"{key}: {value}", model_name)
+
+        if current_token_count + token_count_key_value <= token_limit:
+            part1[key] = value
+            current_token_count += token_count_key_value
+        else:
+            part2[key] = value
+
+    return part1, part2
 
 async def find_relevant_info(user_prompt, user_store, max_token_length=8192):
     # Read config file.
@@ -15,17 +32,23 @@ async def find_relevant_info(user_prompt, user_store, max_token_length=8192):
     model_name = "gpt-4"
     max_tokens = 8192
 
-    # Get path of file summaries path.
-    #file_summaries_path = config['OPTIONS'].get('RelativeFileSummariesPath', '')
     file_summaries_path = f"filebot-store-000/{user_store}/.docubot/file_summaries.json"
     with open(file_summaries_path, 'r') as json_file:
         file_summaries = json.load(json_file)
 
-    # Get prepend text
     prepend_prompt = config['DEFAULT'].get('PrependPrompt', '')
 
+    total_tokens_file_summaries = num_tokens_from_string(json.dumps(file_summaries), 'gpt-3')
 
-    prompt = f"{prepend_prompt}. Based on the following summaries```{file_summaries}``` which file or files based on the summaries should we open to see if it has any info regarding. List the most promising files first. Prepend and append a bracket to each filepath given like this `[/app/filebot-store-000/path/to/file]`: ```{user_prompt}```"
+    # Break dictionary if it exceeds max_token_length
+    if total_tokens_file_summaries > 7000:
+        file_summaries1, file_summaries2 = break_dict_by_tokens(file_summaries, 3500, model_name='gpt-3')
+        # Replace `file_summaries` with `file_summaries1` or `file_summaries2` depending on which you want to use
+        file_summaries = file_summaries1  # or file_summaries2
+
+    print(file_summaries)
+
+    prompt = f"{prepend_prompt}. Based on the following summaries```{json.dumps(file_summaries)}``` which file or files based on the summaries should we open to see if it has any info regarding. List the most promising files first. Prepend and append a bracket to each filepath given like this `[/app/filebot-store-000/path/to/file]`: ```{user_prompt}```"
 
     total_tokens = num_tokens_from_string(prompt, 'gpt-3')
     model_name, max_tokens = get_model_and_tokens(prompt)
