@@ -17,7 +17,7 @@ async def find_relevant_info(user_prompt, user_store, max_token_length=8192):
 
     # Get path of file summaries path.
     #file_summaries_path = config['OPTIONS'].get('RelativeFileSummariesPath', '')
-    file_summaries_path = "file_summaries." + user_store + ".json"
+    file_summaries_path = f"filebot-store-000/{user_store}/.docubot/file_summaries.json"
     with open(file_summaries_path, 'r') as json_file:
         file_summaries = json.load(json_file)
 
@@ -25,7 +25,7 @@ async def find_relevant_info(user_prompt, user_store, max_token_length=8192):
     prepend_prompt = config['DEFAULT'].get('PrependPrompt', '')
 
 
-    prompt = f"{prepend_prompt}. Based on the following summaries```{file_summaries}``` which file or files based on the summaries should we open to see if it has any info regarding. List the most promising files first. Prepend and append a bracket to each filepath given like this `[filebot-store-00/file/path]`: ```{user_prompt}```"
+    prompt = f"{prepend_prompt}. Based on the following summaries```{file_summaries}``` which file or files based on the summaries should we open to see if it has any info regarding. List the most promising files first. Prepend and append a bracket to each filepath given like this `[/app/filebot-store-000/path/to/file]`: ```{user_prompt}```"
 
     total_tokens = num_tokens_from_string(prompt, 'gpt-3')
     model_name, max_tokens = get_model_and_tokens(prompt)

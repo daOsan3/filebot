@@ -67,7 +67,7 @@ async def get_filebot_response(request, code_mode, num_files):
         store_value = data.get('store')
         logging.info(store_value)
         relevant_info = await find_relevant_info(user_prompt=user_prompt, user_store=store_value)
-        logging.info('relevant info', relevant_info)
+        print('relevant info', relevant_info)
         response = await answer_user_prompt(relevant_info)
         file_paths = extract_file_paths(response, code_mode)
 

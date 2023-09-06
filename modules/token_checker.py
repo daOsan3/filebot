@@ -22,12 +22,12 @@ def get_model_and_tokens(prompt):
     model_name = None
     max_tokens = None
 
-    if is_within_limit_gpt3:
-        model_name = "gpt-3.5-turbo"
-        max_tokens = 4192
-    elif is_within_limit_gpt4:
+    if is_within_limit_gpt4:
         model_name = "gpt-4"
         max_tokens = 8000
+    elif is_within_limit_gpt3:
+        model_name = "gpt-3.5-turbo"
+        max_tokens = 4192
     elif is_within_limit_gpt3_big:
         model_name = "gpt-3.5-turbo-16k-0613"
         max_tokens = 16000
