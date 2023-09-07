@@ -134,7 +134,10 @@ async def get_filebot_response(request, code_mode, num_files):
                 "files": final_top_files
             }
 
-            logging.info(f"return_object:\n\n{return_object}")
+            logging.info('final answer')
+            logging.info(f"\n\n{return_object['prompt']}\n\n")
+            logging.info('some other useful files')
+            logging.info(f"\n\n{return_object['files']}")
 
             return web.Response(text=json.dumps(return_object))
         else:
