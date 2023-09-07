@@ -2,6 +2,7 @@ import os
 import json
 import configparser
 import logging
+import asyncio
 from .token_checker import get_model_and_tokens
 from .token_counter import num_tokens_from_string
 from .llm_model import generate_completion
@@ -25,23 +26,15 @@ def break_dict_by_tokens(dict_obj, token_limit, model_name='gpt-3'):
     return part1, part2
 
 async def find_relevant_info(user_prompt, file_summaries, max_token_length=8192):
-    # Read config file.
+    # Read config file
     config = configparser.ConfigParser()
     config.read('filebot.config')
-
-    model_name = "gpt-4"
-    max_tokens = 8192
-
     prepend_prompt = config['DEFAULT'].get('PrependPrompt', '')
 
     total_tokens_file_summaries = num_tokens_from_string(json.dumps(file_summaries), 'gpt-3')
 
-    # Break dictionary if it exceeds max_token_length
-    if total_tokens_file_summaries > 7000:
-        file_summaries1, file_summaries2 = break_dict_by_tokens(file_summaries, 3500, model_name='gpt-3')
-        # Replace `file_summaries` with `file_summaries1` or `file_summaries2` depending on which you want to use
-
-        prompt = f"{prepend_prompt}. Based on the following summaries```{json.dumps(file_summaries1)}``` which file or files based on the summaries should we open to see if it has any info regarding. List the most promising files first. Prepend and append a bracket to each filepath given like this `[/app/filebot-store-000/path/to/file]`: ```{user_prompt}```"
+    async def fetch_response(file_summaries_subset):
+        prompt = f"{prepend_prompt}. Based on the following summaries```{json.dumps(file_summaries_subset)}``` which file or files based on the summaries should we open to see if it has any info regarding. List the most promising files first. Prepend and append a bracket to each filepath given like this `[/app/filebot-store-000/path/to/file]`: ```{user_prompt}```"
 
         total_tokens = num_tokens_from_string(prompt, 'gpt-3')
         model_name, max_tokens = get_model_and_tokens(prompt)
@@ -50,37 +43,20 @@ async def find_relevant_info(user_prompt, file_summaries, max_token_length=8192)
             raise ValueError(f"No suitable model found for the given token length {total_tokens}.")
 
         logging.info(f"Sending request to OpenAI {model_name}")
-        response1 = await generate_completion(prompt, model_name=model_name, max_tokens=max_tokens)
+        return await generate_completion(prompt, model_name=model_name, max_tokens=max_tokens)
 
-        prompt = f"{prepend_prompt}. Based on the following summaries```{json.dumps(file_summaries2)}``` which file or files based on the summaries should we open to see if it has any info regarding. List the most promising files first. Prepend and append a bracket to each filepath given like this `[/app/filebot-store-000/path/to/file]`: ```{user_prompt}```"
+    if total_tokens_file_summaries > 7000:
+        file_summaries1, file_summaries2 = break_dict_by_tokens(file_summaries, 3500, model_name='gpt-3')
 
-        total_tokens = num_tokens_from_string(prompt, 'gpt-3')
-        model_name, max_tokens = get_model_and_tokens(prompt)
+        # Fetch responses concurrently
+        response1, response2 = await asyncio.gather(fetch_response(file_summaries1), fetch_response(file_summaries2))
 
-        if model_name is None or max_tokens is None:
-            raise ValueError(f"No suitable model found for the given token length {total_tokens}.")
-
-        response2 = await generate_completion(prompt, model_name=model_name, max_tokens=max_tokens)
-
-        logging.info(f"Completed request to OpenAI {model_name}")
+        logging.info(f"Completed request to OpenAI")
         final_response = response1 + response2
         logging.info(f"final response:\n\n{final_response}")
         return final_response
 
-    print(file_summaries)
-
-    prompt = f"{prepend_prompt}. Based on the following summaries```{json.dumps(file_summaries)}``` which file or files based on the summaries should we open to see if it has any info regarding. List the most promising files first. Prepend and append a bracket to each filepath given like this `[/app/filebot-store-000/path/to/file]`: ```{user_prompt}```"
-
-    total_tokens = num_tokens_from_string(prompt, 'gpt-3')
-    model_name, max_tokens = get_model_and_tokens(prompt)
-
-    if model_name is None or max_tokens is None:
-        raise ValueError(f"No suitable model found for the given token length {total_tokens}.")
-
-    logging.info(f"Sending request to OpenAI {model_name}")
-    response = await generate_completion(prompt, model_name=model_name, max_tokens=max_tokens)
-    logging.info(f"Completed request to OpenAI {model_name}")
-    return response
+    return await fetch_response(file_summaries)
 
 def get_file_content(file_path):
     """Fetch the content of a file at a given file path."""
