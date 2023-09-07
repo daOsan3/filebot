@@ -24,17 +24,13 @@ def break_dict_by_tokens(dict_obj, token_limit, model_name='gpt-3'):
 
     return part1, part2
 
-async def find_relevant_info(user_prompt, user_store, max_token_length=8192):
+async def find_relevant_info(user_prompt, file_summaries, max_token_length=8192):
     # Read config file.
     config = configparser.ConfigParser()
     config.read('filebot.config')
 
     model_name = "gpt-4"
     max_tokens = 8192
-
-    file_summaries_path = f"filebot-store-000/{user_store}/.docubot/file_summaries.json"
-    with open(file_summaries_path, 'r') as json_file:
-        file_summaries = json.load(json_file)
 
     prepend_prompt = config['DEFAULT'].get('PrependPrompt', '')
 

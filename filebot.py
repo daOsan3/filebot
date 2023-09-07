@@ -13,6 +13,8 @@ from modules.find_info import answer_prompt
 from modules.file_ranker import rank_files, get_file_answers
 from modules.get_store_paths_and_names import get_store_paths_and_names
 from modules.call_docubot import call_docubot
+from modules.elimination_round import elimination_round
+from modules.elimination_round import file_summaries_abbreviated
 
 async def get_store_value(request):
     """Extract `store` value from the incoming request data."""
@@ -79,10 +81,29 @@ async def get_filebot_response(request, code_mode, num_files):
         user_prompt = data.get('user_prompt')
         store_value = data.get('store')
         logging.info(store_value)
-        relevant_info = await find_relevant_info(user_prompt=user_prompt, user_store=store_value)
-        print('relevant info', relevant_info)
+        file_summaries = ""
+
+        file_summaries_path = f"filebot-store-000/{store_value}/.docubot/file_summaries.json"
+        with open(file_summaries_path, 'r') as json_file:
+            file_summaries = json.load(json_file)
+
+        #relevant_info = await find_relevant_info(user_prompt=user_prompt, file_summaries=file_summaries)
+        relevant_info = """
+"Based on the information provided, the files most promising for information related to GraphQL schema endpooint 'getAllUserInfo' in `turbosrc-service/server.js` are:\n\n- `[/app/filebot-store-000/turbosrc-service/.docubot/server.js_doc.md]`\n- `[/app/filebot-store-000/turbosrc-service/.docubot/pullForkServer.js_doc.md]`\n- `[/app/filebot-store-000/turbosrc-service/testdbserver.js_doc.md]`\n\nThe first file, `server.js_doc.md`, is the documentation for the `server.js` file you mentioned which may have relevant information regarding adding a new endpoint to the GraphQL schema. The next two files `pullForkServer.js_doc.md` and `testdbserver.js_doc.md`, could have additional useful resources as they are also related to GraphQL schema and server-side logic.Based on your specified need, you might want to look into the following files for potentially useful information:\n\n1. `[/app/filebot-store-000/turbosrc-service/.docubot/src/lib/actions.js_doc.md]` - This file provides utility/helper functions for a backend service interacting with GitHub's API. It might contain relevant code snippets or instructions to help add to the GraphQL schema.\n\n2. `[/app/filebot-store-000/turbosrc-service/.docubot/src/utils/engineRequests.js_doc.md]` - This file implements utility functions for making API requests to an external service. It might provide useful references for including the 'getAllUserInfo' endpoint.\n\n3. `[/app/filebot-store-000/turbosrc-service/.docubot/src/utils/requests.js_doc.md]` - This file contains methods that make HTTP requests to interact with a GraphQL API for the TurboSrc service. This could give insight into adding a new GraphQL endpoint.\n   \n4. `[/app/filebot-store-000/turbosrc-service/.docubot/src/lib/state.js_doc.md]` - This file contains methods for managing repositories, pull requests, and tokens in a database. It showcases JavaScript methods that interact with a backend whether it be a database or an API that sends and retrieves data.\n  \n5. `[/app/filebot-store-000/turbosrc-service/.docubot/src/utils/ghServiceRequests.js_doc.md]` - This file has utility functions related to GitHub service and might contain relevant information for adding new functionality to the GitHub-related GraphQL schema.\n  \nRemember to bear in mind that you should check out all referenced functions and files to understand the bigger structure of the application."
+"""
+        logging.info('round 1 relevant info')
+        logging.info(relevant_info)
+        file_paths = elimination_round(relevant_info)
+        file_summaries = file_summaries_abbreviated(store_value, file_paths)
+        #file_summaries = json.dumps(file_summaries, indent=4)
+        #print(file_summaries)
+        relevant_info = await find_relevant_info(user_prompt=user_prompt, file_summaries=file_summaries)
+        logging.info('round 2 relevant info')
+        logging.info(relevant_info)
         response = await answer_user_prompt(relevant_info)
+        logging.info('comleted answer user prompt')
         file_paths = extract_file_paths(response, code_mode)
+        logging.info('comleted extract')
 
         file_paths = [
             path.replace('_docs.md', '').replace('./docubot', '') if path.endswith('_docs.md')
@@ -90,7 +111,8 @@ async def get_filebot_response(request, code_mode, num_files):
             for path in file_paths
         ]
 
-        print(f"file paths:\n\n{file_paths}")
+        logging.info("file paths")
+        logging.info(file_paths)
         if file_paths:
             #top_files = await rank_files(file_paths, num_files)
             top_files = file_paths
@@ -98,12 +120,14 @@ async def get_filebot_response(request, code_mode, num_files):
                 top_files = file_paths[:3]
             top_files = [await use_non_doc_file_path(path) for path in top_files]
             top_files = [await strip_encapsulating_quotes(path) for path in top_files]
-            print('top_files', top_files)
+            logging.info("top files")
+            logging.info(top_files)
             final_prompt = await answer_prompt(top_files[0], user_prompt, max_token_length=8200)
 
 
             final_top_files = [await clean_file_path(path) for path in top_files]
-            print(f"final top files:\n\n{final_top_files}")
+            logging.info("final top files")
+            logging.info(final_top_files)
             final_top_files = list(set(final_top_files))
 
 
@@ -113,7 +137,7 @@ async def get_filebot_response(request, code_mode, num_files):
                 "files": final_top_files
             }
 
-            print(f"return_object:\n\n{return_object}")
+            logging.info(f"return_object:\n\n{return_object}")
 
             return web.Response(text=json.dumps(return_object))
         else:

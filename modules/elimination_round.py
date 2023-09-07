@@ -27,20 +27,43 @@ The `server.js_doc.md` file seems the most relevant as it outlines the functiona
 """
 
 def elimination_round(response, code_mode=False):
+    logging.info('start elimination')
     file_paths = extract_file_paths(response, code_mode)
+    logging.info(file_paths)
     return file_paths
 
 def file_summaries_abbreviated(user_store, file_paths):
-    file_summaries_abbreviated = {}
-    file_summaries = {}
+    try:
+        logging.info('start abbreviating file summaries')
+        file_summaries_abbreviated = {}
+        file_summaries = {}
 
-    file_summaries_path = f"filebot-store-000/{user_store}/.docubot/file_summaries.json"
-    with open(file_summaries_path, 'r') as json_file:
-        file_summaries = json.load(json_file)
+        file_summaries_path = f"filebot-store-000/{user_store}/.docubot/file_summaries.json"
 
-    for file_path in file_paths:
-        file_summaries_abbreviated[file_path] = file_summaries[file_path]
-    return file_summaries_abbreviated
+        # Try to open and read the JSON file
+        try:
+            with open(file_summaries_path, 'r') as json_file:
+                file_summaries = json.load(json_file)
+        except FileNotFoundError:
+            logging.error(f"{file_summaries_path} not found.")
+            return {}
+        except json.JSONDecodeError:
+            logging.error(f"Error decoding JSON in {file_summaries_path}")
+            return {}
+
+        # Try to extract data for each file_path
+        for file_path in file_paths:
+            try:
+                file_summaries_abbreviated[file_path] = file_summaries[file_path]
+            except KeyError:
+                logging.warning(f"{file_path} not found in file_summaries")
+
+        logging.info('completed abbreviating file summaries')
+        return file_summaries_abbreviated
+
+    except Exception as e:
+        logging.exception("An unexpected error occurred")
+        return {}
 
 # Extract file paths from response
 def extract_file_paths(response, code_mode=False):
