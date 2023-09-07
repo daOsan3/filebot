@@ -9,22 +9,22 @@ import functools
 import logging
 from aiohttp import web
 
-response = """"
-Based on your request, here are the most promising files:
-
-1. `[/app/filebot-store-000/turbosrc-service/.docubot/server.js_doc.md]`
-2. `[/app/filebot-store-000/turbosrc-service/README.md]`
-3. `[/app/filebot-store-000/turbosrc-service/tsrc-dev]`
-4. `[/app/filebot-store-000/turbosrc-service/tsrc-test]`
-
-The `server.js_doc.md` file seems the most relevant as it outlines the functionality related to GraphQL schema and endpoint operations of `server.js`. The `README.md` may contain overall information about modifying the service, and the `tsrc-dev` and `tsrc-test` could be pertinent as they handle service operations and testing.Based on the provided files and summaries it seems like these are the most relevant files:
-
-1. `[/app/filebot-store-000/turbosrc-service/.docubot/src/lib/state.js_doc.md]`
-2. `[/app/filebot-store-000/turbosrc-service/.docubot/src/lib/actions.js_doc.md]`
-3. `[/app/filebot-store-000/turbosrc-service/.docubot/src/utils/engineRequests.js_doc.md]`
-4. `[/app/filebot-store-000/turbosrc-service/.docubot/src/utils/requests.js_doc.md]`
-5. `[/app/filebot-store-000/turbosrc-service/.docubot/src/utils/ghServiceRequests.js_doc.md]`
-"""
+#response = """"
+#Based on your request, here are the most promising files:
+#
+#1. `[/app/filebot-store-000/turbosrc-service/.docubot/server.js_doc.md]`
+#2. `[/app/filebot-store-000/turbosrc-service/README.md]`
+#3. `[/app/filebot-store-000/turbosrc-service/tsrc-dev]`
+#4. `[/app/filebot-store-000/turbosrc-service/tsrc-test]`
+#
+#The `server.js_doc.md` file seems the most relevant as it outlines the functionality related to GraphQL schema and endpoint operations of `server.js`. The `README.md` may contain overall information about modifying the service, and the `tsrc-dev` and `tsrc-test` could be pertinent as they handle service operations and testing.Based on the provided files and summaries it seems like these are the most relevant files:
+#
+#1. `[/app/filebot-store-000/turbosrc-service/.docubot/src/lib/state.js_doc.md]`
+#2. `[/app/filebot-store-000/turbosrc-service/.docubot/src/lib/actions.js_doc.md]`
+#3. `[/app/filebot-store-000/turbosrc-service/.docubot/src/utils/engineRequests.js_doc.md]`
+#4. `[/app/filebot-store-000/turbosrc-service/.docubot/src/utils/requests.js_doc.md]`
+#5. `[/app/filebot-store-000/turbosrc-service/.docubot/src/utils/ghServiceRequests.js_doc.md]`
+#"""
 
 def elimination_round(response, code_mode=False):
     logging.info('start elimination')
