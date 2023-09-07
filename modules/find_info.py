@@ -44,7 +44,32 @@ async def find_relevant_info(user_prompt, user_store, max_token_length=8192):
     if total_tokens_file_summaries > 7000:
         file_summaries1, file_summaries2 = break_dict_by_tokens(file_summaries, 3500, model_name='gpt-3')
         # Replace `file_summaries` with `file_summaries1` or `file_summaries2` depending on which you want to use
-        file_summaries = file_summaries1  # or file_summaries2
+
+        prompt = f"{prepend_prompt}. Based on the following summaries```{json.dumps(file_summaries1)}``` which file or files based on the summaries should we open to see if it has any info regarding. List the most promising files first. Prepend and append a bracket to each filepath given like this `[/app/filebot-store-000/path/to/file]`: ```{user_prompt}```"
+
+        total_tokens = num_tokens_from_string(prompt, 'gpt-3')
+        model_name, max_tokens = get_model_and_tokens(prompt)
+
+        if model_name is None or max_tokens is None:
+            raise ValueError(f"No suitable model found for the given token length {total_tokens}.")
+
+        logging.info(f"Sending request to OpenAI {model_name}")
+        response1 = await generate_completion(prompt, model_name=model_name, max_tokens=max_tokens)
+
+        prompt = f"{prepend_prompt}. Based on the following summaries```{json.dumps(file_summaries2)}``` which file or files based on the summaries should we open to see if it has any info regarding. List the most promising files first. Prepend and append a bracket to each filepath given like this `[/app/filebot-store-000/path/to/file]`: ```{user_prompt}```"
+
+        total_tokens = num_tokens_from_string(prompt, 'gpt-3')
+        model_name, max_tokens = get_model_and_tokens(prompt)
+
+        if model_name is None or max_tokens is None:
+            raise ValueError(f"No suitable model found for the given token length {total_tokens}.")
+
+        response2 = await generate_completion(prompt, model_name=model_name, max_tokens=max_tokens)
+
+        logging.info(f"Completed request to OpenAI {model_name}")
+        final_response = response1 + response2
+        logging.info(f"final response:\n\n{final_response}")
+        return final_response
 
     print(file_summaries)
 
