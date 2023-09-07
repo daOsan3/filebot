@@ -16,6 +16,20 @@ from modules.call_docubot import call_docubot
 from modules.elimination_round import elimination_round
 from modules.elimination_round import file_summaries_abbreviated
 
+def log_without_metadata(return_object):
+    # Save the old format
+    old_format = logging.root.handlers[0].formatter._fmt
+
+    # Set the format to just the message
+    logging.root.handlers[0].setFormatter(logging.Formatter('%(message)s'))
+
+    # Your logs
+    logging.info(f"FINAL ANSWER'\n\n{return_object['prompt']}\n\n")
+    logging.info(f"OTHER USEFUL FILES\n\n{return_object['files']}")
+
+    # Reset to the old format
+    logging.root.handlers[0].setFormatter(logging.Formatter(old_format))
+
 async def get_store_value(request):
     """Extract `store` value from the incoming request data."""
     data = await request.json()
@@ -134,10 +148,7 @@ async def get_filebot_response(request, code_mode, num_files):
                 "files": final_top_files
             }
 
-            logging.info('final answer')
-            logging.info(f"\n\n{return_object['prompt']}\n\n")
-            logging.info('some other useful files')
-            logging.info(f"\n\n{return_object['files']}")
+            log_without_metadata(return_object)
 
             return web.Response(text=json.dumps(return_object))
         else:
