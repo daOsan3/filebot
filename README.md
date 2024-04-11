@@ -4,7 +4,7 @@ FileBot is a Python-based project designed to be a stand-alone utility or a serv
 
 Currently, in this implementation, it extends the functionality of chatgpt-ui when adding `/filebotActivate="<name-of-your-project>"
 
-~~If you're using for coding, it's best to use it against documentation files. Working on somethings to make it work off of straight code files, but it's a longshot!~~ It now works with source code files.
+ It now works with source code files.
 
 ***It does NOT retreive files from searches against a vector database. It's LLMs all the way down!***
 
